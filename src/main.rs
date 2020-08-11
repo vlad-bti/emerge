@@ -1,3 +1,5 @@
+use petgraph::Graph;
+
 use std::env;
 
 fn help() {
@@ -5,9 +7,13 @@ fn help() {
         emerge <string>");
 }
 
-fn build_dag(packages: Vec<String>) -> Result<(), String> {}
+fn build_dag(_packages: Vec<String>) -> Result<Box<Graph::<&'static str, &'static str>>, String> {
+    let deps = Graph::<&str, &str>::new();
 
-fn print_dag() {
+    Ok(Box::new(deps))
+}
+
+fn print_dag(_dag: Box<Graph::<&'static str, &'static str>>) {
     println!();
 }
 
@@ -25,5 +31,5 @@ fn main() {
         return;
     }
 
-    print_dag();
+    print_dag(result.unwrap());
 }
