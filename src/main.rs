@@ -7,14 +7,15 @@ fn help() {
         emerge <string>");
 }
 
-fn build_dag(_packages: Vec<String>) -> Result<Box<Graph::<&'static str, &'static str>>, String> {
+fn build_dag(_packages: Vec<String>) -> Result<Graph::<&'static str, &'static str>, String> {
     let deps = Graph::<&str, &str>::new();
 
-    Ok(Box::new(deps))
+    Ok(deps)
 }
 
-fn print_dag(_dag: Box<Graph::<&'static str, &'static str>>) {
-    println!();
+fn print_dag(dag: Graph::<&'static str, &'static str>) {
+    let order = petgraph::algo::toposort(&dag, None).unwrap();
+    println!("{:?}", order);
 }
 
 fn main() {
