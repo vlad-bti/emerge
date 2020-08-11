@@ -1,7 +1,8 @@
 use std::env;
 
 fn help() {
-    println!();
+    println!("usage:
+        emerge <string>");
 }
 
 fn build_dag(packages: Vec<String>) -> Result<(), String> {}
