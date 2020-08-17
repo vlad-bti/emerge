@@ -1,9 +1,14 @@
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
+
+use regex::Regex;
+
 struct PackageNameInfo {
     group: String,
     name: String,
+    slot: String,
     version: String,
-    suffix: String,
-    revision: String,
 }
 
 fn load_ebuild(ebuild_name: String) {
@@ -14,8 +19,24 @@ fn load_ebuild(ebuild_name: String) {
     parse_uses()?;
 }
 
+fn parse_package_name(package_name: String) -> Result<PackageNameInfo, String> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new("...").unwrap();
+    }
+    if !RE.is_match(&package_name) {
+        return Err(format!("'{}' is not a valid package atom.", package_name));
+    }
+
+    Ok(PackageNameInfo {
+        group: "".to_string(),
+        name: "".to_string(),
+        slot: "".to_string(),
+        version: "".to_string(),
+    })
+}
+
 pub fn load_package_info(package_name: String) {
-    parse_package_name()?;
+    let package_name_info = parse_package_name(package_name)?;
     find_package()?;
     let mut package_version_list = Vec::new();
     if is_version_specify {
