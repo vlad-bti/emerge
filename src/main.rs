@@ -22,7 +22,7 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap::<&'static
     while !package_name_list.is_empty() {
         let package_name = package_name_list.pop().unwrap();
 
-        package_info, package_depends_list = ebuild_utils::ebuild_utils::load_package_info(&package_name)?;
+        package_info, package_depends_list = ebuild_utils::load_package_info(&package_name)?;
 
         if package_depends_list.is_empty() {
             graph.add_edge(&node_s, &package_name, 1);
@@ -43,7 +43,7 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap::<&'static
     }
 
     if petgraph::algo::is_cyclic_directed(&graph) {
-        return Err("directed graph contains a cycle");
+        return Err(String::from("directed graph contains a cycle"));
     }
 
     Ok(graph)
