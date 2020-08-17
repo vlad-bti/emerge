@@ -2,25 +2,27 @@ use petgraph::prelude::*;
 
 use std::env;
 
+mod ebuild_utils;
+
 fn help() {
     println!("usage:
         emerge <string>");
 }
 
-fn build_dag(package_name_list: Vec<String>) -> Result<DiGraphMap::<&'static str, i8>, String> {
+fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap::<&'static str, i8>, String> {
     let mut graph = DiGraphMap::<&str, i8>::new();
     let node_s = graph.add_node("s");
     let node_t = graph.add_node("t");
 
-    for package_name in package_name_list {
+    for package_name in &package_name_list {
         graph.add_node(&package_name);
         graph.add_edge(&package_name, &node_t, 1);
     }
 
     while !package_name_list.is_empty() {
-        let package_name = package_name_list.pop();
+        let package_name = package_name_list.pop().unwrap();
 
-        package_info, package_depends_list = parse_ebuild(&package_name)?;
+        package_info, package_depends_list = ebuild_utils::ebuild_utils::load_package_info(&package_name)?;
 
         if package_depends_list.is_empty() {
             graph.add_edge(&node_s, &package_name, 1);
@@ -29,7 +31,7 @@ fn build_dag(package_name_list: Vec<String>) -> Result<DiGraphMap::<&'static str
         for depend_name in package_depends_list {
             graph.add_node(&depend_name);
             graph.add_edge(&depend_name, &package_name, 1);
-            package_name_list.push(depend_name);
+            package_name_list.push(&depend_name);
         }
 
         if package_info_list.contains(&package_name) {
@@ -40,7 +42,7 @@ fn build_dag(package_name_list: Vec<String>) -> Result<DiGraphMap::<&'static str
         }
     }
 
-    if !petgraph::algo::is_cyclic_directed(&graph) {
+    if petgraph::algo::is_cyclic_directed(&graph) {
         return Err("directed graph contains a cycle");
     }
 
