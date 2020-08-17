@@ -1,3 +1,11 @@
+struct PackageNameInfo {
+    group: String,
+    name: String,
+    version: String,
+    suffix: String,
+    revision: String,
+}
+
 fn load_ebuild(ebuild_name: String) {
     parse_eapi()?;
     parse_keywords()?;
