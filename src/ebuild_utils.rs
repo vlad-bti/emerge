@@ -5,10 +5,10 @@ extern crate regex;
 use regex::Regex;
 
 struct PackageNameInfo {
-    group: String,
-    name: String,
-    slot: String,
-    version: String,
+    category: Option(&str),
+    name: Option(&str),
+    slot: Option(&str),
+    version: Option(&str),
 }
 
 fn load_ebuild(ebuild_name: String) {
@@ -32,7 +32,7 @@ fn parse_package_name(package_name: String) -> Result<PackageNameInfo, String> {
         let _rev = "\d+";
         let _vr = format!("{}(-r({}))?", _v, _rev);
 
-        let _cp = format!("^({}/{}(-{})?(:{})?)$", _cat, _pkg, _vr, _slot);
+        let _cp = format!("^((?P<cat>{})/)?(?P<name>{})(-(?P<ver>{}))?(:(?P<slot>{}))?$", _cat, _pkg, _vr, _slot);
 
         static ref RE: Regex = Regex::new(_cp).unwrap();
     }
@@ -40,11 +40,13 @@ fn parse_package_name(package_name: String) -> Result<PackageNameInfo, String> {
         return Err(format!("'{}' is not a valid package atom.", package_name));
     }
 
+    let cap = RE.captures(input).unwrap();
+
     Ok(PackageNameInfo {
-        group: "".to_string(),
-        name: "".to_string(),
-        slot: "".to_string(),
-        version: "".to_string(),
+        category: cap.name("cat").map(|cat| cat.as_str()),
+        name: cap.name("name").map(|name| name.as_str()),
+        slot: cap.name("slot").map(|slot| slot.as_str()),
+        version: cap.name("ver").map(|ver| ver.as_str()),
     })
 }
 
