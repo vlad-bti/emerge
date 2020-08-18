@@ -50,14 +50,30 @@ fn parse_package_name(package_name: String) -> Result<PackageNameInfo, String> {
     })
 }
 
+fn get_category(package_name: &str) -> Result<Option(&str), String> {
+// TODO: config
+    let path= "/usr/portage/";
+
+}
+
+fn get_version_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, String> {
+
+}
+
 pub fn load_package_info(package_name: String) {
-    let package_name_info = parse_package_name(package_name)?;
-    find_package()?;
+    let mut package_name_info = parse_package_name(package_name)?;
+    if package_name_info.category.is_none() {
+        let name_copy = package_name_info.name.as_ref().copied();
+        package_name_info.category = get_category(name_copy.unwrap().0)?;
+    }
+
+    let version_list = get_version_list(&package_name_info)?;
+
     let mut package_version_list = Vec::new();
-    if is_version_specify {
+    if let Some(version) = package_name_info.version {
         package_version_list.push(version);
     } else {
-        package_version_list.append(version_list);
+        package_version_list.extend(version_list);
     }
     for version in package_version_list {
         load_ebuild(verson)?;
