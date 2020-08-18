@@ -3,6 +3,7 @@ extern crate lazy_static;
 extern crate regex;
 
 use regex::Regex;
+use std::path::Path;
 
 struct PackageNameInfo {
     category: Option(&str),
@@ -11,7 +12,7 @@ struct PackageNameInfo {
     version: Option(&str),
 }
 
-fn load_ebuild(ebuild_name: String) {
+fn load_ebuild(ebuild_name: &str) {
     parse_eapi()?;
     parse_keywords()?;
     parse_slot_subslot()?;
@@ -52,8 +53,24 @@ fn parse_package_name(package_name: String) -> Result<PackageNameInfo, String> {
 
 fn get_category(package_name: &str) -> Result<Option(&str), String> {
 // TODO: config
-    let path= "/usr/portage/";
+    let path = Path::new("/usr/portage");
+// TODO: map() filter()
+    let mut category_list = Vec::new();
+    for entry in path.read_dir()? {
+        let dir = entry?;
+        if dir.path().is_dir() && dir.path().join(package_name).exists() {
+            category_list.push(dir.file_name());
+        }
+    }
 
+    if category_list.len() = 0 {
+        return Err(format!("there are no ebuilds to satisfy '{}'.", package_name));
+    } else if category_list.len() > 1 {
+        return Err(format!("The short ebuild name '{}' is ambiguous.", package_name));
+    }
+
+    let category = category_list.pop()?.to_str().unwrap();
+    Ok(Option(category))
 }
 
 fn get_version_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, String> {
@@ -76,6 +93,6 @@ pub fn load_package_info(package_name: String) {
         package_version_list.extend(version_list);
     }
     for version in package_version_list {
-        load_ebuild(verson)?;
+        load_ebuild(version.0)?;
     }
 }
