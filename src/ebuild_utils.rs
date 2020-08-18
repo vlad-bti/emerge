@@ -4,6 +4,7 @@ extern crate regex;
 
 use regex::Regex;
 use std::path::Path;
+use std::result::Result;
 
 struct PackageNameInfo {
     category: Option(&str),
@@ -54,7 +55,7 @@ fn parse_package_name(package_name: String) -> Result<PackageNameInfo, String> {
 fn get_category(package_name: &str) -> Result<Option(&str), String> {
 // TODO: config
     let path = Path::new("/usr/portage");
-// TODO: map() filter()
+// TODO: map() filter() dub
     let mut category_list = Vec::new();
     for entry in path.read_dir()? {
         let dir = entry?;
@@ -73,8 +74,39 @@ fn get_category(package_name: &str) -> Result<Option(&str), String> {
     Ok(Option(category))
 }
 
-fn get_version_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, String> {
+fn get_ebuild_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, String> {
+    let cat = package_name_info.category.as_ref().copied().unwrap().0;
+    let name = package_name_info.name.as_ref().copied().unwrap().0;
+    let mut ver = "";
+    if package_name_info.version.is_some() {
+        ver = package_name_info.version.as_ref().copied().unwrap().0;
+    }
 
+    package_name_info.version.as_ref().copied();
+// TODO: config
+    let path = Path::new(format!("/usr/portage/{}/{}", cat, name).as_str());
+// TODO: map() filter() dub
+    let mut ebuild_list = Vec::new();
+    for entry in path.read_dir()? {
+        let file = entry?;
+        if file.path().is_file() {
+            let file_name = file.file_name().to_str().unwrap();
+            if !file_name.contains(".ebuild") {
+                continue;
+            }
+            if package_name_info.version.is_some() && !file_name.contains(ver) {
+                continue;
+            }
+
+            ebuild_list.push(file_name);
+        }
+    }
+
+    if ebuild_list.len() = 0 {
+        return Err(format!("there are no ebuilds to satisfy '{}'.", package_name));
+    }
+
+    Ok(ebuild_list)
 }
 
 pub fn load_package_info(package_name: String) {
@@ -84,15 +116,8 @@ pub fn load_package_info(package_name: String) {
         package_name_info.category = get_category(name_copy.unwrap().0)?;
     }
 
-    let version_list = get_version_list(&package_name_info)?;
-
-    let mut package_version_list = Vec::new();
-    if let Some(version) = package_name_info.version {
-        package_version_list.push(version);
-    } else {
-        package_version_list.extend(version_list);
-    }
-    for version in package_version_list {
-        load_ebuild(version.0)?;
+    let ebuild_list = get_ebuild_list(&package_name_info)?;
+    for ebuild in ebuild_list {
+        load_ebuild(ebuild.0)?;
     }
 }
