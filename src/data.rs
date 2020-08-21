@@ -21,8 +21,8 @@ pub struct PackageVersion {
 pub struct PackageInfo {
     pub name: String,
     pub slot: String,
-    pub subslot: String,
-    pub installed_version: PackageVersion,
+    pub subslot: Option(String),
+    pub installed_version: Option(PackageVersion),
     pub version_list: Vec<PackageVersion>,
     pub version_need_list: Vec<PackageVersion>,
     pub use_need_list: Vec<String>,

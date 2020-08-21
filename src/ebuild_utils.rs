@@ -5,6 +5,7 @@ extern crate regex;
 use regex::Regex;
 use std::path::Path;
 use std::result::Result;
+use std::fs;
 
 struct PackageNameInfo {
     category: Option(&str),
@@ -13,12 +14,24 @@ struct PackageNameInfo {
     version: Option(&str),
 }
 
-fn load_ebuild(ebuild_name: &str) {
+fn load_ebuild(ebuild_name: &str) -> Result<PackageInfo, String> {
+    lazy_static! {
+        static ref EAPI_RE: Regex = Regex::new(r"^EAPI=(?P<eapi>\d+)$").unwrap();
+        static ref SLOT_RE: Regex = Regex::new(r#^SLOT="(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?"$#).unwrap();
+        static ref KEYWORDS_RE: Regex = Regex::new(r#KEYWORDS="(?P<keywords>[\w\-\*~ ]+)"#).unwrap();
+        static ref DEPENDS_RE: Regex = Regex::new(r#(?m)DEPEND="(?P<depends>[\w\-<>=!\?\n\*\+/\(\):|\[\] ]+)"#).unwrap();
+        static ref USE_RE: Regex = Regex::new(r#(?m)IUSE="(?P<use>[\w\-<>=!\?\n\*\+/\(\):| ]+)"#).unwrap();
+    }
+
+    let content = fs::read_to_string(ebuild_name)?;
+
     parse_eapi()?;
     parse_keywords()?;
     parse_slot_subslot()?;
     parse_depends()?;
     parse_uses()?;
+
+    Ok()
 }
 
 // TODO: https://gitweb.gentoo.org/proj/portage.git/tree/lib/_emerge/is_valid_package_atom.py?h=portage-2.3.103
@@ -38,11 +51,11 @@ fn parse_package_name(package_name: String) -> Result<PackageNameInfo, String> {
 
         static ref RE: Regex = Regex::new(_cp).unwrap();
     }
-    if !RE.is_match(&package_name) {
+    if !PACKAGE_NAME_RE.is_match(&package_name) {
         return Err(format!("'{}' is not a valid package atom.", package_name));
     }
 
-    let cap = RE.captures(input).unwrap();
+    let cap = PACKAGE_NAME_RE.captures(input).unwrap();
 
     Ok(PackageNameInfo {
         category: cap.name("cat").map(|cat| cat.as_str()),
@@ -91,6 +104,7 @@ fn get_ebuild_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, Stri
         let file = entry?;
         if file.path().is_file() {
             let file_name = file.file_name().to_str().unwrap();
+// TODO: config
             if !file_name.contains(".ebuild") {
                 continue;
             }

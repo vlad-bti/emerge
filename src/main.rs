@@ -9,7 +9,7 @@ fn help() {
         emerge <string>");
 }
 
-fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap::<&'static str, i8>, String> {
+fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap<&'static str, i8>, String> {
     let mut graph = DiGraphMap::<&str, i8>::new();
     let node_s = graph.add_node("s");
     let node_t = graph.add_node("t");
@@ -49,7 +49,7 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap::<&'static
     Ok(graph)
 }
 
-fn print_dag(dag: DiGraphMap::<&'static str, i8>) {
+fn print_dag(dag: DiGraphMap<&'static str, i8>) {
     let order = petgraph::algo::toposort(&dag, None).unwrap();
     println!("{:?}", order);
 }
