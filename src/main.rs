@@ -1,3 +1,5 @@
+mod data;
+
 use petgraph::prelude::*;
 
 use std::env;
