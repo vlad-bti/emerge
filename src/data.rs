@@ -33,5 +33,5 @@ pub struct EbuildInfo {
     pub subslot: Option(&str),
     pub keywords: Vec<String>,
     pub depends: Vec<String>,
-    pub uses: Vec<String>,
+    pub ises: Vec<String>,
 }

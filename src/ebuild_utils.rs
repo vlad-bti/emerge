@@ -37,15 +37,14 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
 
     let slot_cap = SLOT_RE.captures(&content).unwrap();
     let keywords_cap = KEYWORDS_RE.captures(&content).unwrap();
+    let depends_cap = DEPENDS_RE.captures(&content).unwrap();
     let iuse_cap = IUSE_RE.captures(&content).unwrap();
-
-    parse_depends()?;
 
     Ok(EbuildInfo {
         slot: slot_cap.name("slot").map(|slot| slot.as_str()),
         subslot: slot_cap.name("subslot").map(|subslot| subslot.as_str()),
         keywords: keywords_cap.name("keywords").unwrap().split_ascii_whitespace().collect(),
-        depends: ,
+        depends: depends_cap.name("depends").unwrap().lines().collect(),
         ises: iuse_cap.name("iuse").unwrap().split_ascii_whitespace().collect(),
     })
 }
