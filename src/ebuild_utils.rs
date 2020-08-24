@@ -7,6 +7,7 @@ use std::path::Path;
 use std::result::Result;
 use std::fs;
 
+// TODO: https://devmanual.gentoo.org/ebuild-writing/index.html
 fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     lazy_static! {
         static ref EAPI_RE: Regex = Regex::new(r#EAPI="*(?P<eapi>\d+)"*#).unwrap();
