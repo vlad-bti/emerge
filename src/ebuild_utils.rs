@@ -14,7 +14,7 @@ struct PackageNameInfo {
     version: Option(&str),
 }
 
-fn load_ebuild(ebuild_name: &str) -> Result<PackageInfo, String> {
+fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     lazy_static! {
         static ref EAPI_RE: Regex = Regex::new(r#EAPI="*(?P<eapi>\d+)"*#).unwrap();
         static ref SLOT_RE: Regex = Regex::new(r#SLOT="(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?"#).unwrap();
@@ -35,12 +35,19 @@ fn load_ebuild(ebuild_name: &str) -> Result<PackageInfo, String> {
         return Err(format!("EAPI must be defined. '{}'", ebuild_name));
     }
 
+    let slot_cap = EAPI_RE.slot(&content).unwrap();
+
     parse_keywords()?;
-    parse_slot_subslot()?;
     parse_depends()?;
     parse_uses()?;
 
-    Ok()
+    Ok(EbuildInfo {
+        slot: slot_cap.name("slot").map(|slot| slot.as_str()),
+        subslot: slot_cap.name("subslot").map(|subslot| subslot.as_str()),
+        keywords: ,
+        depends: ,
+        uses:  ,
+    })
 }
 
 // TODO: https://gitweb.gentoo.org/proj/portage.git/tree/lib/_emerge/is_valid_package_atom.py?h=portage-2.3.103

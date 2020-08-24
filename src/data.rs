@@ -27,3 +27,11 @@ pub struct PackageInfo {
     pub version_need_list: Vec<PackageVersion>,
     pub use_need_list: Vec<String>,
 }
+
+pub struct EbuildInfo {
+    pub slot: Option(&str),
+    pub subslot: Option(&str),
+    pub keywords: Vec<String>,
+    pub depends: Vec<String>,
+    pub uses: Vec<String>,
+}
