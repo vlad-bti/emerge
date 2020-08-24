@@ -20,14 +20,14 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
         static ref SLOT_RE: Regex = Regex::new(r#SLOT="(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?"#).unwrap();
         static ref KEYWORDS_RE: Regex = Regex::new(r#(?m)KEYWORDS="(?P<keywords>[\w\-\*~ ]+)"#).unwrap();
         static ref DEPENDS_RE: Regex = Regex::new(r#(?m)DEPEND="(?P<depends>[\w\-<>=!\?\n\*\+/\(\):|\[\] ]+)"#).unwrap();
-        static ref USE_RE: Regex = Regex::new(r#(?m)IUSE="(?P<use>[\w\-<>=!\?\n\*\+/\(\):| ]+)"#).unwrap();
+        static ref IUSE_RE: Regex = Regex::new(r#(?m)IUSE="(?P<iuse>[\w\-<>=!\?\n\*\+/\(\):| ]+)"#).unwrap();
     }
 
     let content = fs::read_to_string(&ebuild_name)?;
 
     let eapi_cap = EAPI_RE.captures(&content).unwrap();
     let eapi_str = eapi_cap.name("eapi").map(|eapi| eapi.as_str());
-    if let Ok(eapi) = eapi_str.parse::<u8>().unwrap() {
+    if let Ok(eapi) = eapi_str.parse::<u8>() {
         if eapi < 5 || eapi > 7 {
             return Err(format!("'{}' is not a valid EAPI. '{}'", eapi, ebuild_name));
         }
@@ -35,18 +35,18 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
         return Err(format!("EAPI must be defined. '{}'", ebuild_name));
     }
 
-    let slot_cap = EAPI_RE.slot(&content).unwrap();
+    let slot_cap = SLOT_RE.captures(&content).unwrap();
+    let keywords_cap = KEYWORDS_RE.captures(&content).unwrap();
+    let iuse_cap = IUSE_RE.captures(&content).unwrap();
 
-    parse_keywords()?;
     parse_depends()?;
-    parse_uses()?;
 
     Ok(EbuildInfo {
         slot: slot_cap.name("slot").map(|slot| slot.as_str()),
         subslot: slot_cap.name("subslot").map(|subslot| subslot.as_str()),
-        keywords: ,
+        keywords: keywords_cap.name("keywords").unwrap().split_ascii_whitespace().collect(),
         depends: ,
-        uses:  ,
+        ises: iuse_cap.name("iuse").unwrap().split_ascii_whitespace().collect(),
     })
 }
 
