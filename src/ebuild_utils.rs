@@ -16,16 +16,25 @@ struct PackageNameInfo {
 
 fn load_ebuild(ebuild_name: &str) -> Result<PackageInfo, String> {
     lazy_static! {
-        static ref EAPI_RE: Regex = Regex::new(r"^EAPI=(?P<eapi>\d+)$").unwrap();
-        static ref SLOT_RE: Regex = Regex::new(r#^SLOT="(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?"$#).unwrap();
-        static ref KEYWORDS_RE: Regex = Regex::new(r#KEYWORDS="(?P<keywords>[\w\-\*~ ]+)"#).unwrap();
+        static ref EAPI_RE: Regex = Regex::new(r#EAPI="*(?P<eapi>\d+)"*#).unwrap();
+        static ref SLOT_RE: Regex = Regex::new(r#SLOT="(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?"#).unwrap();
+        static ref KEYWORDS_RE: Regex = Regex::new(r#(?m)KEYWORDS="(?P<keywords>[\w\-\*~ ]+)"#).unwrap();
         static ref DEPENDS_RE: Regex = Regex::new(r#(?m)DEPEND="(?P<depends>[\w\-<>=!\?\n\*\+/\(\):|\[\] ]+)"#).unwrap();
         static ref USE_RE: Regex = Regex::new(r#(?m)IUSE="(?P<use>[\w\-<>=!\?\n\*\+/\(\):| ]+)"#).unwrap();
     }
 
-    let content = fs::read_to_string(ebuild_name)?;
+    let content = fs::read_to_string(&ebuild_name)?;
 
-    parse_eapi()?;
+    let eapi_cap = EAPI_RE.captures(&content).unwrap();
+    let eapi_str = eapi_cap.name("eapi").map(|eapi| eapi.as_str());
+    if let Ok(eapi) = eapi_str.parse::<u8>().unwrap() {
+        if eapi < 5 || eapi > 7 {
+            return Err(format!("'{}' is not a valid EAPI. '{}'", eapi, ebuild_name));
+        }
+    } else {
+        return Err(format!("EAPI must be defined. '{}'", ebuild_name));
+    }
+
     parse_keywords()?;
     parse_slot_subslot()?;
     parse_depends()?;
