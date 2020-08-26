@@ -14,7 +14,7 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
         static ref SLOT_RE: Regex = Regex::new(r#SLOT="(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?"#).unwrap();
         static ref KEYWORDS_RE: Regex = Regex::new(r#(?m)KEYWORDS="(?P<keywords>[\w\-\*~ ]+)"#).unwrap();
         static ref DEPENDS_RE: Regex = Regex::new(r#(?m)DEPEND="(?P<depends>[\w\-<>=!\?\n\*\+/\(\):|\[\] ]+)"#).unwrap();
-        static ref IUSE_RE: Regex = Regex::new(r#(?m)IUSE="(?P<iuse>[\w\-<>=!\?\n\*\+/\(\):| ]+)"#).unwrap();
+        static ref IUSE_RE: Regex = Regex::new(r#(?m)IUSE="(?P<iuse>[\w\-\+)"#).unwrap();
     }
 
     let content = fs::read_to_string(&ebuild_name)?;
