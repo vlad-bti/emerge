@@ -7,6 +7,29 @@ use std::path::Path;
 use std::result::Result;
 use std::fs;
 
+use logos::Logos;
+use crate::data::EbuildInfo;
+use crate::data::PackageNameInfo;
+
+#[derive(Logos, Debug, PartialEq)]
+enum Token {
+    #[error]
+    #[regex(r"[ \t\n\f]+", logos::skip)]
+    Error,
+
+    #[regex("[a-z-]+/[a-z-\+\d\.:]+", package)]
+    #[regex("\[[a-z,\+-=!\? ]+\]", package_uses)]
+    #[regex("[a-z]+", uses)]
+    #[regex("[!=<>|?]+", conditional)]
+    #[regex("[()]", brackets)]
+    Text,
+}
+
+fn parse_depends(depends: &str) {
+    let mut lex = Token::lexer(depends);
+}
+
+
 // TODO: https://devmanual.gentoo.org/ebuild-writing/index.html
 fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     lazy_static! {
@@ -34,11 +57,13 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     let depends_cap = DEPENDS_RE.captures(&content).unwrap();
     let iuse_cap = IUSE_RE.captures(&content).unwrap();
 
+    parse_depends(depends_cap.name("depends").unwrap());
+
     Ok(EbuildInfo {
         slot: slot_cap.name("slot").map(|slot| slot.as_str()),
         subslot: slot_cap.name("subslot").map(|subslot| subslot.as_str()),
         keywords: keywords_cap.name("keywords").unwrap().split_ascii_whitespace().collect(),
-        depends: depends_cap.name("depends").unwrap().lines().collect(),
+        depends: ,
         ises: iuse_cap.name("iuse").unwrap().split_ascii_whitespace().collect(),
     })
 }

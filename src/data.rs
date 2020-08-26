@@ -28,9 +28,17 @@ pub struct PackageInfo {
     pub use_need_list: Vec<String>,
 }
 
-struct PackageNameInfo {
-    category: Option(&str),
-    name: Option(&str),
-    slot: Option(&str),
-    version: Option(&str),
+pub struct PackageNameInfo {
+    pub category: Option(&str),
+    pub name: Option(&str),
+    pub slot: Option(&str),
+    pub version: Option(&str),
+}
+
+pub struct EbuildInfo {
+    pub slot: Option(&str),
+    pub subslot: Option(&str),
+    pub keywords: Vec<String>,
+    pub depends: Vec<String>,
+    pub ises: Vec<String>,
 }
