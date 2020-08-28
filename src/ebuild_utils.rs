@@ -9,7 +9,7 @@ use std::fs;
 
 use logos::{Logos, Lexer};
 
-use crate::data::{EbuildInfo, Brackets, Conditional};
+use crate::data::{EbuildInfo, Brackets, Conditional, PackageInfo, PackageVersion, VersionStatus, VersionType};
 use crate::data::PackageNameInfo;
 
 #[derive(Logos, Debug, PartialEq)]
@@ -125,8 +125,9 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
 // TODO: https://gitweb.gentoo.org/proj/portage.git/tree/lib/_emerge/is_valid_package_atom.py?h=portage-2.3.103
 //      https://gitweb.gentoo.org/proj/portage.git/tree/lib/portage/dep/__init__.py?h=portage-2.3.103
 //      https://gitweb.gentoo.org/proj/portage.git/tree/lib/portage/versions.py?h=portage-2.3.103
-fn parse_package_name(package_name: String) -> Result<PackageNameInfo, String> {
+fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
     lazy_static! {
+        // TODO subslot
         let _slot = "([\w+][\w+.-]*)";
         let _cat = "[\w+][\w+.-]*";
         let _pkg = "[\w+][\w+-]*?";
@@ -211,7 +212,7 @@ fn get_ebuild_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, Stri
     Ok(ebuild_list)
 }
 
-pub fn load_package_info(package_name: String) {
+pub fn load_package_info(package_name: &str) -> Result<PackageInfo, String> {
     let mut package_name_info = parse_package_name(package_name)?;
     if package_name_info.category.is_none() {
         let name_copy = package_name_info.name.as_ref().copied();
@@ -219,7 +220,27 @@ pub fn load_package_info(package_name: String) {
     }
 
     let ebuild_list = get_ebuild_list(&package_name_info)?;
+    let mut package_info = PackageInfo{
+        name: package_name_info.name.unwrap().0,
+        slot: package_name_info.slot.unwrap().0,
+        subslot: None,
+        installed_version: None,
+        version_list: vec![],
+        version_need_list: vec![],
+        use_need_list: vec![]
+    };
     for ebuild in ebuild_list {
-        load_ebuild(ebuild.0)?;
+        let ebuild_info= load_ebuild(&ebuild.0)?;
+        let ebuild_name_info = parse_package_name(Path::new(&ebuild.0).file_stem().unwrap().to_str().unwrap())?;
+        let package_version = PackageVersion{
+            version: ebuild_name_info.version.unwrap().0,
+            version_type: VersionType::Stable,
+            version_status: VersionStatus::Unchanged,
+            use_list: ebuild_info.ises,
+            use_set_list: vec![]
+        };
+
+        package_info.version_list.push(package_version);
     }
+    Ok(package_info)
 }

@@ -7,11 +7,13 @@ use std::env;
 mod ebuild_utils;
 
 fn help() {
-    println!("usage:
-        emerge <string>");
+    println!(
+        "usage:
+        emerge <string>"
+    );
 }
 
-fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap<&'static str, i8>, String> {
+fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&'static str, i8>, String> {
     let mut graph = DiGraphMap::<&str, i8>::new();
     let node_s = graph.add_node("s");
     let node_t = graph.add_node("t");
@@ -24,7 +26,7 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap<&'static s
     while !package_name_list.is_empty() {
         let package_name = package_name_list.pop().unwrap();
 
-        package_info, package_depends_list = ebuild_utils::load_package_info(&package_name)?;
+        let package_info = ebuild_utils::load_package_info(&package_name)?;
 
         if package_depends_list.is_empty() {
             graph.add_edge(&node_s, &package_name, 1);
@@ -37,8 +39,8 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<DiGraphMap<&'static s
         }
 
         if package_info_list.contains(&package_name) {
-            package_info_list.check_restrictions(package_info)?;
-            package_info_list.merge_restrictions(package_info);
+            package_info_list.check_restrictions(&package_info)?;
+            package_info_list.merge_restrictions(&package_info);
         } else {
             package_info_list.push(package_info);
         }
@@ -64,7 +66,7 @@ fn main() {
         return;
     }
 
-    let result = build_dag(args[1..].to_vec());
+    let result = build_dag(args[1..].iter().map(|arg| arg.as_str()).collect());
     if let Err(e) = result {
         println!("error: {:?}", e);
         return;

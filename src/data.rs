@@ -10,21 +10,21 @@ pub enum VersionStatus {
     UnmaskedByUser,
 }
 
-pub struct PackageVersion {
-    pub version: String,
+pub struct PackageVersion<'a> {
+    pub version: &'a str,
     pub version_type: VersionType,
     pub version_status: VersionStatus,
     pub use_list: Vec<String>,
     pub use_set_list: Vec<String>,
 }
 
-pub struct PackageInfo {
-    pub name: String,
-    pub slot: String,
+pub struct PackageInfo<'a> {
+    pub name: &'a str,
+    pub slot: &'a str,
     pub subslot: Option(String),
     pub installed_version: Option(PackageVersion),
-    pub version_list: Vec<PackageVersion>,
-    pub version_need_list: Vec<PackageVersion>,
+    pub version_list: Vec<PackageVersion<'a>>,
+    pub version_need_list: Vec<PackageVersion<'a>>,
     pub use_need_list: Vec<String>,
 }
 
