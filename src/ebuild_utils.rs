@@ -7,26 +7,82 @@ use std::path::Path;
 use std::result::Result;
 use std::fs;
 
-use logos::Logos;
-use crate::data::EbuildInfo;
+use logos::{Logos, Lexer};
+
+use crate::data::{EbuildInfo, Brackets, Conditional};
 use crate::data::PackageNameInfo;
 
 #[derive(Logos, Debug, PartialEq)]
-enum Token {
+enum Token<'a> {
     #[error]
     #[regex(r"[ \t\n\f]+", logos::skip)]
     Error,
 
-    #[regex("[a-z-]+/[a-z-\+\d\.:]+", package)]
-    #[regex("\[[a-z,\+-=!\? ]+\]", package_uses)]
-    #[regex("[a-z]+", uses)]
-    #[regex("[!=<>|?]+", conditional)]
+    #[regex("[\w-]+/[\w\+-\d\.]+")]
+    PackageName,
+
+    #[regex(":[\d\.]+(/[\d\.]+)*[=\*]*", package_slot)]
+    PackageSlot(&'a str),
+
+    #[regex("\[[\w\d,\+-=!\?\(\) ]+\]", package_uses)]
+    PackageUses(Vec<&'a str>),
+
+    #[regex("[\w\d]+")]
+    Uses,
+
+    #[regex("[!=<>|?~]+", conditional)]
+    Conditional(Conditional),
+
     #[regex("[()]", brackets)]
-    Text,
+    Brackets(Brackets),
 }
 
-fn parse_depends(depends: &str) {
+fn package_uses(lex: &mut Lexer<Token>) -> Option<Vec<&str>> {
+    let slice = lex.slice();
+    Some(slice.split(',').collect())
+}
+fn package_slot(lex: &mut Lexer<Token>) -> Option<&str> {
+    let slice = lex.slice();
+    Some(slice[1..])
+}
+
+fn conditional(lex: &mut Lexer<Token>) -> Option<Conditional> {
+    let slice = lex.slice();
+    match slice {
+        Some("!") => Some(Conditional::WeakBlocker),
+        Some("!!") => Some(Conditional::StrongBlocker),
+        Some("!<") => Some(Conditional::BlockLess),
+        Some("!>") => Some(Conditional::BlockGreater),
+        Some("<") => Some(Conditional::Less),
+        Some("=") => Some(Conditional::Equal),
+        Some(">") => Some(Conditional::Greater),
+        Some("=<") => Some(Conditional::LessOrEqual),
+        Some("=>") => Some(Conditional::GreaterOrEqual),
+        Some("||") => Some(Conditional::Or),
+        Some("?") => Some(Conditional::If),
+        _ => None,
+    }
+}
+
+fn brackets(lex: &mut Lexer<Token>) -> Option<Brackets> {
+    let slice = lex.slice();
+    match slice {
+        Some("(") => Some(Brackets::Open),
+        Some(")") => Some(Brackets::Close),
+    }
+}
+
+fn parse_depends(depends: &str) -> Vec<String> {
     let mut lex = Token::lexer(depends);
+
+    let mut result = Vec::new();
+    for token in lex {
+        if let Token::PackageName = token {
+            result.push(token.slice());
+        }
+    }
+
+    result
 }
 
 
@@ -57,13 +113,11 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     let depends_cap = DEPENDS_RE.captures(&content).unwrap();
     let iuse_cap = IUSE_RE.captures(&content).unwrap();
 
-    parse_depends(depends_cap.name("depends").unwrap());
-
     Ok(EbuildInfo {
         slot: slot_cap.name("slot").map(|slot| slot.as_str()),
         subslot: slot_cap.name("subslot").map(|subslot| subslot.as_str()),
         keywords: keywords_cap.name("keywords").unwrap().split_ascii_whitespace().collect(),
-        depends: ,
+        depends: parse_depends(depends_cap.name("depends").unwrap()),
         ises: iuse_cap.name("iuse").unwrap().split_ascii_whitespace().collect(),
     })
 }

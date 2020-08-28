@@ -42,3 +42,22 @@ pub struct EbuildInfo {
     pub depends: Vec<String>,
     pub ises: Vec<String>,
 }
+
+pub enum Brackets {
+    Open,
+    Close,
+}
+
+pub enum Conditional {
+    WeakBlocker,
+    StrongBlocker,
+    BlockLess,
+    BlockGreater,
+    Less,
+    Equal,
+    Greater,
+    LessOrEqual,
+    GreaterOrEqual,
+    Or,
+    If,
+}
