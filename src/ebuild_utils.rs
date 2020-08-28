@@ -237,7 +237,8 @@ pub fn load_package_info(package_name: &str) -> Result<PackageInfo, String> {
             version_type: VersionType::Stable,
             version_status: VersionStatus::Unchanged,
             use_list: ebuild_info.ises,
-            use_set_list: vec![]
+            use_set_list: vec![],
+            depends_list: ebuild_info.depends,
         };
 
         package_info.version_list.push(package_version);

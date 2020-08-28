@@ -16,6 +16,7 @@ pub struct PackageVersion<'a> {
     pub version_status: VersionStatus,
     pub use_list: Vec<String>,
     pub use_set_list: Vec<String>,
+    pub depends_list: Vec<String>,
 }
 
 pub struct PackageInfo<'a> {
