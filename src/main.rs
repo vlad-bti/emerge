@@ -43,13 +43,14 @@ fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&'static str
             graph.add_edge(&depend_name, &package_name, 1);
             package_name_list.push(&depend_name);
         }
-
-        if package_info_list.contains(&package_name) {
-            package_info_list.check_restrictions(&package_info)?;
-            package_info_list.merge_restrictions(&package_info);
-        } else {
-            package_info_list.push(package_info);
-        }
+        /*
+                if package_info_list.contains(&package_name) {
+                    package_info_list.check_restrictions(&package_info)?;
+                    package_info_list.merge_restrictions(&package_info);
+                } else {
+                    package_info_list.push(package_info);
+                }
+        */
     }
 
     if petgraph::algo::is_cyclic_directed(&graph) {

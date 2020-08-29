@@ -3,15 +3,13 @@ use std::fs;
 use std::path::Path;
 use std::result::Result;
 
-use logos::{Lexer, Logos};
+use logos::Logos;
 
 use crate::data::PackageNameInfo;
-use crate::data::{
-    Brackets, Conditional, EbuildInfo, PackageInfo, PackageVersion, VersionStatus, VersionType,
-};
+use crate::data::{EbuildInfo, PackageInfo, PackageVersion, VersionStatus, VersionType};
 
 #[derive(Logos, Debug, PartialEq)]
-enum Token<'a> {
+enum Token {
     #[error]
     #[regex(r"[ \t\n\f]+", logos::skip)]
     Error,
@@ -19,27 +17,27 @@ enum Token<'a> {
     #[regex(r"[\w-]+/[\w\+-\.]+")]
     PackageName,
 
-    #[regex(r":[\w\.]+(/[\w\.]+)*[=\*]*", package_slot)]
-    PackageSlot(&'a str),
+    #[regex(r":[\w\.]+(/[\w\.]+)*[=\*]*")]
+    PackageSlot,
 
-    #[regex(r"\[[\w,\+-=!\?\(\) ]+\]", package_uses)]
-    PackageUses(Vec<&'a str>),
+    #[regex(r"\[[\w,\+-=!\?\(\) ]+\]")]
+    PackageUses,
 
     #[regex(r"[\w]+")]
     Uses,
 
-    #[regex(r"[!=<>|?~]+", conditional)]
-    Conditional(Conditional),
+    #[regex(r"[!=<>|?~]+")]
+    Conditional,
 
-    #[regex(r"[()]", brackets)]
-    Brackets(Brackets),
+    #[regex(r"[()]")]
+    Brackets,
 }
-
+/*
 fn package_uses(lex: &mut Lexer<Token>) -> Option<Vec<&str>> {
     let slice = lex.slice();
     Some(slice.split(',').collect())
 }
-fn package_slot(lex: &mut Lexer<Token>) -> Option<&str> {
+fn package_slot<'a>(lex: &mut Lexer<Token>) -> Option<&'a str> {
     let slice = lex.slice();
     Some(slice[1..])
 }
@@ -69,6 +67,7 @@ fn brackets(lex: &mut Lexer<Token>) -> Option<Brackets> {
         Some(")") => Some(Brackets::Close),
     }
 }
+*/
 
 fn parse_depends(depends: &str) -> Vec<String> {
     let mut lex = Token::lexer(depends);
@@ -157,7 +156,7 @@ fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
         return Err(format!("'{}' is not a valid package atom.", package_name));
     }
 
-    let cap = PACKAGE_NAME_RE.captures(input).unwrap();
+    let cap = PACKAGE_NAME_RE.captures(package_name).unwrap();
 
     Ok(PackageNameInfo {
         category: cap.name("cat").map(|cat| cat.as_str()),
@@ -167,7 +166,7 @@ fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
     })
 }
 
-fn get_category(package_name: &str) -> Result<Option(&str), String> {
+fn get_category(package_name: &str) -> Result<Option<&str>, String> {
     // TODO: config
     let path = Path::new("/usr/portage");
     // TODO: map() filter() dub
@@ -192,10 +191,10 @@ fn get_category(package_name: &str) -> Result<Option(&str), String> {
     }
 
     let category = category_list.pop()?.to_str().unwrap();
-    Ok(Option(category))
+    Ok(std::option::Option::Some(category))
 }
 
-fn get_ebuild_list(package_name_info: &PackageNameInfo) -> Result<Vec<&str>, String> {
+fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a str>, String> {
     let cat = package_name_info.category.as_ref().copied().unwrap().0;
     let name = package_name_info.name.as_ref().copied().unwrap().0;
     let mut ver = "";
@@ -225,10 +224,7 @@ fn get_ebuild_list(package_name_info: &PackageNameInfo) -> Result<Vec<&str>, Str
     }
 
     if ebuild_list.len() = 0 {
-        return Err(format!(
-            "there are no ebuilds to satisfy '{}'.",
-            package_name
-        ));
+        return Err(format!("there are no ebuilds to satisfy '{}'.", name));
     }
 
     Ok(ebuild_list)

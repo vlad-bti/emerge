@@ -22,23 +22,23 @@ pub struct PackageVersion<'a> {
 pub struct PackageInfo<'a> {
     pub name: &'a str,
     pub slot: &'a str,
-    pub subslot: Option(String),
-    pub installed_version: Option(PackageVersion),
+    pub subslot: Option<String>,
+    pub installed_version: Option<PackageVersion<'a>>,
     pub version_list: Vec<PackageVersion<'a>>,
     pub version_need_list: Vec<PackageVersion<'a>>,
     pub use_need_list: Vec<String>,
 }
 
-pub struct PackageNameInfo {
-    pub category: Option(&str),
-    pub name: Option(&str),
-    pub slot: Option(&str),
-    pub version: Option(&str),
+pub struct PackageNameInfo<'a> {
+    pub category: Option<&'a str>,
+    pub name: Option<&'a str>,
+    pub slot: Option<&'a str>,
+    pub version: Option<&'a str>,
 }
 
-pub struct EbuildInfo {
-    pub slot: Option(&str),
-    pub subslot: Option(&str),
+pub struct EbuildInfo<'a> {
+    pub slot: Option<&'a str>,
+    pub subslot: Option<&'a str>,
     pub keywords: Vec<String>,
     pub depends: Vec<String>,
     pub ises: Vec<String>,
