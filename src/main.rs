@@ -28,6 +28,8 @@ fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&'static str
 
         let package_info = ebuild_utils::load_package_info(&package_name)?;
 
+        let package_version = package_info.version_list.first().unwrap();
+        let package_depends_list = package_version.depends_list.as_ref();
         if package_depends_list.is_empty() {
             graph.add_edge(&node_s, &package_name, 1);
         }
