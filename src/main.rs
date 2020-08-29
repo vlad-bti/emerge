@@ -17,7 +17,7 @@ fn help() {
     );
 }
 
-fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&'static str, i8>, String> {
+fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&str, i8>, String> {
     let mut graph = DiGraphMap::<&str, i8>::new();
     let node_s = graph.add_node("s");
     let node_t = graph.add_node("t");
@@ -33,12 +33,11 @@ fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&'static str
         let package_info = ebuild_utils::load_package_info(&package_name)?;
 
         let package_version = package_info.version_list.first().unwrap();
-        let package_depends_list = package_version.depends_list.as_ref();
-        if package_depends_list.is_empty() {
+        if package_version.depends_list.is_empty() {
             graph.add_edge(&node_s, &package_name, 1);
         }
 
-        for depend_name in package_depends_list {
+        for depend_name in package_version.depends_list {
             graph.add_node(&depend_name);
             graph.add_edge(&depend_name, &package_name, 1);
             package_name_list.push(&depend_name);
@@ -60,7 +59,7 @@ fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&'static str
     Ok(graph)
 }
 
-fn print_dag(dag: DiGraphMap<&'static str, i8>) {
+fn print_dag(dag: DiGraphMap<&str, i8>) {
     let order = petgraph::algo::toposort(&dag, None).unwrap();
     println!("{:?}", order);
 }

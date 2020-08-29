@@ -14,9 +14,9 @@ pub struct PackageVersion<'a> {
     pub version: &'a str,
     pub version_type: VersionType,
     pub version_status: VersionStatus,
-    pub use_list: Vec<String>,
+    pub use_list: Vec<&'a str>,
     pub use_set_list: Vec<String>,
-    pub depends_list: Vec<String>,
+    pub depends_list: Vec<&'a str>,
 }
 
 pub struct PackageInfo<'a> {
@@ -39,9 +39,9 @@ pub struct PackageNameInfo<'a> {
 pub struct EbuildInfo<'a> {
     pub slot: Option<&'a str>,
     pub subslot: Option<&'a str>,
-    pub keywords: Vec<String>,
-    pub depends: Vec<String>,
-    pub ises: Vec<String>,
+    pub keywords: Vec<&'a str>,
+    pub depends: Vec<&'a str>,
+    pub ises: Vec<&'a str>,
 }
 
 pub enum Brackets {

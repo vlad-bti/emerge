@@ -69,13 +69,13 @@ fn brackets(lex: &mut Lexer<Token>) -> Option<Brackets> {
 }
 */
 
-fn parse_depends(depends: &str) -> Vec<String> {
+fn parse_depends(depends: &str) -> Vec<&str> {
     let mut lex = Token::lexer(depends);
 
     let mut result = Vec::new();
     for token in lex {
         if let Token::PackageName = token {
-            result.push(token.slice());
+            result.push(lex.slice());
         }
     }
 
@@ -95,10 +95,15 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
         static ref IUSE_RE: Regex = Regex::new(r"(?m)IUSE=\x22(?P<iuse>[\w\-\+)\x22").unwrap();
     }
 
-    let content = fs::read_to_string(&ebuild_name)?;
+    let result = fs::read_to_string(&ebuild_name);
+    if let Err(e) = result {
+        return Err(e.to_string());
+    }
+
+    let content = result.unwrap();
 
     let eapi_cap = EAPI_RE.captures(&content).unwrap();
-    let eapi_str = eapi_cap.name("eapi").map(|eapi| eapi.as_str());
+    let eapi_str = eapi_cap.name("eapi").map(|eapi| eapi.as_str()).unwrap();
     if let Ok(eapi) = eapi_str.parse::<u8>() {
         if eapi < 5 || eapi > 7 {
             return Err(format!("'{}' is not a valid EAPI. '{}'", eapi, ebuild_name));
@@ -117,12 +122,19 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
         subslot: slot_cap.name("subslot").map(|subslot| subslot.as_str()),
         keywords: keywords_cap
             .name("keywords")
+            .map(|keywords| keywords.as_str())
             .unwrap()
             .split_ascii_whitespace()
             .collect(),
-        depends: parse_depends(depends_cap.name("depends").unwrap()),
+        depends: parse_depends(
+            depends_cap
+                .name("depends")
+                .map(|depends| depends.as_str())
+                .unwrap(),
+        ),
         ises: iuse_cap
             .name("iuse")
+            .map(|iuse| iuse.as_str())
             .unwrap()
             .split_ascii_whitespace()
             .collect(),
@@ -150,7 +162,7 @@ fn get_package_name_re() -> String {
 //      https://gitweb.gentoo.org/proj/portage.git/tree/lib/portage/versions.py?h=portage-2.3.103
 fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
     lazy_static! {
-        static ref PACKAGE_NAME_RE: Regex = Regex::new(get_package_name_re()).unwrap();
+        static ref PACKAGE_NAME_RE: Regex = Regex::new(get_package_name_re().as_str()).unwrap();
     }
     if !PACKAGE_NAME_RE.is_match(&package_name) {
         return Err(format!("'{}' is not a valid package atom.", package_name));
@@ -171,14 +183,19 @@ fn get_category(package_name: &str) -> Result<Option<&str>, String> {
     let path = Path::new("/usr/portage");
     // TODO: map() filter() dub
     let mut category_list = Vec::new();
-    for entry in path.read_dir()? {
-        let dir = entry?;
+    let dir_content = path.read_dir();
+    if let Err(e) = dir_content {
+        return Err(e.to_string());
+    }
+    for entry in dir_content.unwrap() {
+        let dir = entry.unwrap();
+
         if dir.path().is_dir() && dir.path().join(package_name).exists() {
             category_list.push(dir.file_name());
         }
     }
 
-    if category_list.len() = 0 {
+    if category_list.len() == 0 {
         return Err(format!(
             "there are no ebuilds to satisfy '{}'.",
             package_name
@@ -190,7 +207,7 @@ fn get_category(package_name: &str) -> Result<Option<&str>, String> {
         ));
     }
 
-    let category = category_list.pop()?.to_str().unwrap();
+    let category = category_list.pop().unwrap().to_str().unwrap();
     Ok(std::option::Option::Some(category))
 }
 
@@ -207,10 +224,15 @@ fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a st
     let path = Path::new(format!("/usr/portage/{}/{}", cat, name).as_str());
     // TODO: map() filter() dub
     let mut ebuild_list = Vec::new();
-    for entry in path.read_dir()? {
-        let file = entry?;
-        if file.path().is_file() {
-            let file_name = file.file_name().to_str().unwrap();
+    let dir_content = path.read_dir();
+    if let Err(e) = dir_content {
+        return Err(e.to_string());
+    }
+
+    for entry in dir_content {
+        let dir = entry?;
+        if dir.path().is_file() {
+            let file_name = dir.file_name().to_str().unwrap();
             // TODO: config
             if !file_name.contains(".ebuild") {
                 continue;
@@ -223,7 +245,7 @@ fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a st
         }
     }
 
-    if ebuild_list.len() = 0 {
+    if ebuild_list.len() == 0 {
         return Err(format!("there are no ebuilds to satisfy '{}'.", name));
     }
 
