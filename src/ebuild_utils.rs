@@ -18,16 +18,16 @@ enum Token<'a> {
     #[regex(r"[ \t\n\f]+", logos::skip)]
     Error,
 
-    #[regex("[\w-]+/[\w\+-\d\.]+")]
+    #[regex("[\w-]+/[\w\+-\.]+")]
     PackageName,
 
-    #[regex(":[\d\.]+(/[\d\.]+)*[=\*]*", package_slot)]
+    #[regex(":[\w\.]+(/[\w\.]+)*[=\*]*", package_slot)]
     PackageSlot(&'a str),
 
-    #[regex("\[[\w\d,\+-=!\?\(\) ]+\]", package_uses)]
+    #[regex("\[[\w,\+-=!\?\(\) ]+\]", package_uses)]
     PackageUses(Vec<&'a str>),
 
-    #[regex("[\w\d]+")]
+    #[regex("[\w]+")]
     Uses,
 
     #[regex("[!=<>|?~]+", conditional)]
