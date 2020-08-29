@@ -17,30 +17,30 @@ fn help() {
     );
 }
 
-fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&str, i8>, String> {
-    let mut graph = DiGraphMap::<&str, i8>::new();
+fn build_dag<'a>(mut package_name_list: Vec<String>) -> Result<DiGraphMap<&'a str, i8>, String> {
+    let mut graph = DiGraphMap::new();
     let node_s = graph.add_node("s");
     let node_t = graph.add_node("t");
 
-    for package_name in &package_name_list {
-        graph.add_node(&package_name);
-        graph.add_edge(&package_name, &node_t, 1);
+    for package_name in package_name_list.clone().iter() {
+        graph.add_node(package_name);
+        graph.add_edge(package_name, node_t, 1);
     }
 
     while !package_name_list.is_empty() {
         let package_name = package_name_list.pop().unwrap();
 
-        let package_info = ebuild_utils::load_package_info(&package_name)?;
+        let package_info = ebuild_utils::load_package_info(package_name.as_str())?;
 
         let package_version = package_info.version_list.first().unwrap();
         if package_version.depends_list.is_empty() {
-            graph.add_edge(&node_s, &package_name, 1);
+            graph.add_edge(node_s, package_name.as_str(), 1);
         }
 
         for depend_name in package_version.depends_list.iter() {
-            graph.add_node(&depend_name);
-            graph.add_edge(&depend_name, &package_name, 1);
-            package_name_list.push(&depend_name);
+            graph.add_node(depend_name);
+            graph.add_edge(depend_name, package_name.as_str(), 1);
+            package_name_list.push(depend_name.into());
         }
         /*
                 if package_info_list.contains(&package_name) {
@@ -72,7 +72,7 @@ fn main() {
         return;
     }
 
-    let result = build_dag(args[1..].iter().map(|arg| arg.as_str()).collect());
+    let result = build_dag(args[1..].into());
     if let Err(e) = result {
         println!("error: {:?}", e);
         return;

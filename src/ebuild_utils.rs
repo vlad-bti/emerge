@@ -69,14 +69,14 @@ fn brackets(lex: &mut Lexer<Token>) -> Option<Brackets> {
 }
 */
 
-fn parse_depends(depends: &str) -> Vec<&str> {
+fn parse_depends(depends: &str) -> Vec<String> {
     let mut lex = Token::lexer(depends);
 
     let mut result = Vec::new();
     loop {
         let token = lex.next();
         if let Some(Token::PackageName) = token {
-            result.push(lex.slice());
+            result.push(String::from(lex.slice()));
         } else if let None = token {
             break;
         }
@@ -121,13 +121,16 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     let iuse_cap = IUSE_RE.captures(&content).unwrap();
 
     Ok(EbuildInfo {
-        slot: slot_cap.name("slot").map(|slot| slot.as_str()),
-        subslot: slot_cap.name("subslot").map(|subslot| subslot.as_str()),
+        slot: slot_cap.name("slot").map(|slot| slot.as_str().into()),
+        subslot: slot_cap
+            .name("subslot")
+            .map(|subslot| subslot.as_str().into()),
         keywords: keywords_cap
             .name("keywords")
             .map(|keywords| keywords.as_str())
             .unwrap()
             .split_ascii_whitespace()
+            .map(|keywords| keywords.into())
             .collect(),
         depends: parse_depends(
             depends_cap
@@ -140,6 +143,7 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
             .map(|iuse| iuse.as_str())
             .unwrap()
             .split_ascii_whitespace()
+            .map(|iuse| iuse.into())
             .collect(),
     })
 }
@@ -174,14 +178,14 @@ fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
     let cap = PACKAGE_NAME_RE.captures(package_name).unwrap();
 
     Ok(PackageNameInfo {
-        category: cap.name("cat").map(|cat| cat.as_str()),
-        name: cap.name("name").map(|name| name.as_str()),
-        slot: cap.name("slot").map(|slot| slot.as_str()),
-        version: cap.name("ver").map(|ver| ver.as_str()),
+        category: cap.name("cat").map(|cat| cat.as_str().into()),
+        name: cap.name("name").map(|name| name.as_str().into()),
+        slot: cap.name("slot").map(|slot| slot.as_str().into()),
+        version: cap.name("ver").map(|ver| ver.as_str().into()),
     })
 }
 
-fn get_category(package_name: &str) -> Result<Option<&str>, String> {
+fn get_category(package_name: &str) -> Result<Option<String>, String> {
     // TODO: config
     let path = Path::new("/usr/portage");
     // TODO: map() filter() dub
@@ -198,7 +202,7 @@ fn get_category(package_name: &str) -> Result<Option<&str>, String> {
         }
     }
 
-    if category_list.len() == 0 {
+    if category_list.is_empty() {
         return Err(format!(
             "there are no ebuilds to satisfy '{}'.",
             package_name
@@ -210,24 +214,23 @@ fn get_category(package_name: &str) -> Result<Option<&str>, String> {
         ));
     }
 
-    let category = category_list.pop().unwrap().to_str().unwrap();
+    let category = category_list.pop().unwrap().into_string().unwrap();
     Ok(std::option::Option::Some(category))
 }
 
-fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a str>, String> {
-    let cat = package_name_info.category.as_ref().copied().unwrap();
-    let name = package_name_info.name.as_ref().copied().unwrap();
-    let mut ver = "";
+fn get_ebuild_list(package_name_info: &PackageNameInfo) -> Result<Vec<String>, String> {
+    let cat = package_name_info.category.clone().unwrap();
+    let name = package_name_info.name.clone().unwrap();
+    let mut ver = String::from("");
     if package_name_info.version.is_some() {
-        ver = package_name_info.version.as_ref().copied().unwrap();
+        ver = package_name_info.version.clone().unwrap();
     }
 
-    package_name_info.version.as_ref().copied();
     // TODO: config
-    let path = Path::new(format!("/usr/portage/{}/{}", cat, name).as_str());
+    let path = format!("/usr/portage/{}/{}", cat, name);
     // TODO: map() filter() dub
     let mut ebuild_list = Vec::new();
-    let dir_content = path.read_dir();
+    let dir_content = Path::new(path.as_str()).read_dir();
     if let Err(e) = dir_content {
         return Err(e.to_string());
     }
@@ -235,12 +238,12 @@ fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a st
     for entry in dir_content.unwrap() {
         let dir = entry.unwrap();
         if dir.path().is_file() {
-            let file_name = dir.file_name().to_str().unwrap();
+            let file_name = dir.file_name().into_string().unwrap();
             // TODO: config
             if !file_name.contains(".ebuild") {
                 continue;
             }
-            if package_name_info.version.is_some() && !file_name.contains(ver) {
+            if package_name_info.version.is_some() && !file_name.contains(ver.as_str()) {
                 continue;
             }
 
@@ -248,7 +251,7 @@ fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a st
         }
     }
 
-    if ebuild_list.len() == 0 {
+    if ebuild_list.is_empty() {
         return Err(format!("there are no ebuilds to satisfy '{}'.", name));
     }
 
@@ -258,14 +261,14 @@ fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a st
 pub fn load_package_info(package_name: &str) -> Result<PackageInfo, String> {
     let mut package_name_info = parse_package_name(package_name)?;
     if package_name_info.category.is_none() {
-        let name_copy = package_name_info.name.as_ref().copied();
-        package_name_info.category = get_category(name_copy.unwrap())?;
+        package_name_info.category =
+            get_category(package_name_info.name.clone().unwrap().as_str())?;
     }
 
     let ebuild_list = get_ebuild_list(&package_name_info)?;
     let mut package_info = PackageInfo {
-        name: package_name_info.name.unwrap(),
-        slot: package_name_info.slot.unwrap(),
+        name: package_name_info.name.clone().unwrap(),
+        slot: package_name_info.slot.clone().unwrap(),
         subslot: None,
         installed_version: None,
         version_list: vec![],
@@ -274,8 +277,13 @@ pub fn load_package_info(package_name: &str) -> Result<PackageInfo, String> {
     };
     for ebuild in ebuild_list {
         let ebuild_info = load_ebuild(&ebuild)?;
-        let ebuild_name_info =
-            parse_package_name(Path::new(&ebuild).file_stem().unwrap().to_str().unwrap())?;
+        let ebuild_name_info = parse_package_name(
+            Path::new(ebuild.as_str())
+                .file_stem()
+                .unwrap()
+                .to_str()
+                .unwrap(),
+        )?;
         let package_version = PackageVersion {
             version: ebuild_name_info.version.unwrap(),
             version_type: VersionType::Stable,
