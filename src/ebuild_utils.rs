@@ -73,9 +73,12 @@ fn parse_depends(depends: &str) -> Vec<&str> {
     let mut lex = Token::lexer(depends);
 
     let mut result = Vec::new();
-    for token in lex {
-        if let Token::PackageName = token {
+    loop {
+        let token = lex.next();
+        if let Some(Token::PackageName) = token {
             result.push(lex.slice());
+        } else if let None = token {
+            break;
         }
     }
 
@@ -229,8 +232,8 @@ fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a st
         return Err(e.to_string());
     }
 
-    for entry in dir_content {
-        let dir = entry?;
+    for entry in dir_content.unwrap() {
+        let dir = entry.unwrap();
         if dir.path().is_file() {
             let file_name = dir.file_name().to_str().unwrap();
             // TODO: config

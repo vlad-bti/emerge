@@ -37,7 +37,7 @@ fn build_dag(mut package_name_list: Vec<&str>) -> Result<DiGraphMap<&str, i8>, S
             graph.add_edge(&node_s, &package_name, 1);
         }
 
-        for depend_name in package_version.depends_list {
+        for depend_name in package_version.depends_list.iter() {
             graph.add_node(&depend_name);
             graph.add_edge(&depend_name, &package_name, 1);
             package_name_list.push(&depend_name);
