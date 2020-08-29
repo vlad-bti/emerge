@@ -1,16 +1,14 @@
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-
 use regex::Regex;
+use std::fs;
 use std::path::Path;
 use std::result::Result;
-use std::fs;
 
-use logos::{Logos, Lexer};
+use logos::{Lexer, Logos};
 
-use crate::data::{EbuildInfo, Brackets, Conditional, PackageInfo, PackageVersion, VersionStatus, VersionType};
 use crate::data::PackageNameInfo;
+use crate::data::{
+    Brackets, Conditional, EbuildInfo, PackageInfo, PackageVersion, VersionStatus, VersionType,
+};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token<'a> {
@@ -18,22 +16,22 @@ enum Token<'a> {
     #[regex(r"[ \t\n\f]+", logos::skip)]
     Error,
 
-    #[regex("[\w-]+/[\w\+-\.]+")]
+    #[regex(r"[\w-]+/[\w\+-\.]+")]
     PackageName,
 
-    #[regex(":[\w\.]+(/[\w\.]+)*[=\*]*", package_slot)]
+    #[regex(r":[\w\.]+(/[\w\.]+)*[=\*]*", package_slot)]
     PackageSlot(&'a str),
 
-    #[regex("\[[\w,\+-=!\?\(\) ]+\]", package_uses)]
+    #[regex(r"\[[\w,\+-=!\?\(\) ]+\]", package_uses)]
     PackageUses(Vec<&'a str>),
 
-    #[regex("[\w]+")]
+    #[regex(r"[\w]+")]
     Uses,
 
-    #[regex("[!=<>|?~]+", conditional)]
+    #[regex(r"[!=<>|?~]+", conditional)]
     Conditional(Conditional),
 
-    #[regex("[()]", brackets)]
+    #[regex(r"[()]", brackets)]
     Brackets(Brackets),
 }
 
@@ -85,15 +83,17 @@ fn parse_depends(depends: &str) -> Vec<String> {
     result
 }
 
-
 // TODO: https://devmanual.gentoo.org/ebuild-writing/index.html
 fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     lazy_static! {
-        static ref EAPI_RE: Regex = Regex::new(r#EAPI="*(?P<eapi>\d+)"*#).unwrap();
-        static ref SLOT_RE: Regex = Regex::new(r#SLOT="(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?"#).unwrap();
-        static ref KEYWORDS_RE: Regex = Regex::new(r#(?m)KEYWORDS="(?P<keywords>[\w\-\*~ ]+)"#).unwrap();
-        static ref DEPENDS_RE: Regex = Regex::new(r#(?m)DEPEND="(?P<depends>[\w\-<>=!\?\n\*\+/\(\):|\[\] ]+)"#).unwrap();
-        static ref IUSE_RE: Regex = Regex::new(r#(?m)IUSE="(?P<iuse>[\w\-\+)"#).unwrap();
+        static ref EAPI_RE: Regex = Regex::new(r"EAPI=\x22*(?P<eapi>\d+)\x22*").unwrap();
+        static ref SLOT_RE: Regex =
+            Regex::new(r"SLOT=\x22(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?\x22").unwrap();
+        static ref KEYWORDS_RE: Regex =
+            Regex::new(r"(?m)KEYWORDS=\x22(?P<keywords>[\w\-\*~ ]+)\x22").unwrap();
+        static ref DEPENDS_RE: Regex =
+            Regex::new(r"(?m)DEPEND=\x22(?P<depends>[\w\-<>=!\?\n\*\+/\(\):|\[\] ]+)\x22").unwrap();
+        static ref IUSE_RE: Regex = Regex::new(r"(?m)IUSE=\x22(?P<iuse>[\w\-\+)\x22").unwrap();
     }
 
     let content = fs::read_to_string(&ebuild_name)?;
@@ -116,9 +116,17 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     Ok(EbuildInfo {
         slot: slot_cap.name("slot").map(|slot| slot.as_str()),
         subslot: slot_cap.name("subslot").map(|subslot| subslot.as_str()),
-        keywords: keywords_cap.name("keywords").unwrap().split_ascii_whitespace().collect(),
+        keywords: keywords_cap
+            .name("keywords")
+            .unwrap()
+            .split_ascii_whitespace()
+            .collect(),
         depends: parse_depends(depends_cap.name("depends").unwrap()),
-        ises: iuse_cap.name("iuse").unwrap().split_ascii_whitespace().collect(),
+        ises: iuse_cap
+            .name("iuse")
+            .unwrap()
+            .split_ascii_whitespace()
+            .collect(),
     })
 }
 
@@ -128,17 +136,17 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
 fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
     lazy_static! {
         // TODO subslot
-        let _slot = "([\w+][\w+.-]*)";
-        let _cat = "[\w+][\w+.-]*";
-        let _pkg = "[\w+][\w+-]*?";
+        let _slot = r"([\w+][\w+.-]*)";
+        let _cat = r"[\w+][\w+.-]*";
+        let _pkg = r"[\w+][\w+-]*?";
 
-        let _v = "(\d+)((\.\d+)*)([a-z]?)((_(pre|p|beta|alpha|rc)\d*)*)";
-        let _rev = "\d+";
+        let _v = r"(\d+)((\.\d+)*)([a-z]?)((_(pre|p|beta|alpha|rc)\d*)*)";
+        let _rev = r"\d+";
         let _vr = format!("{}(-r({}))?", _v, _rev);
 
         let _cp = format!("^((?P<cat>{})/)?(?P<name>{})(-(?P<ver>{}))?(:(?P<slot>{}))?$", _cat, _pkg, _vr, _slot);
 
-        static ref RE: Regex = Regex::new(_cp).unwrap();
+        static ref PACKAGE_NAME_RE: Regex = Regex::new(_cp).unwrap();
     }
     if !PACKAGE_NAME_RE.is_match(&package_name) {
         return Err(format!("'{}' is not a valid package atom.", package_name));
@@ -155,9 +163,9 @@ fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
 }
 
 fn get_category(package_name: &str) -> Result<Option(&str), String> {
-// TODO: config
+    // TODO: config
     let path = Path::new("/usr/portage");
-// TODO: map() filter() dub
+    // TODO: map() filter() dub
     let mut category_list = Vec::new();
     for entry in path.read_dir()? {
         let dir = entry?;
@@ -167,16 +175,22 @@ fn get_category(package_name: &str) -> Result<Option(&str), String> {
     }
 
     if category_list.len() = 0 {
-        return Err(format!("there are no ebuilds to satisfy '{}'.", package_name));
+        return Err(format!(
+            "there are no ebuilds to satisfy '{}'.",
+            package_name
+        ));
     } else if category_list.len() > 1 {
-        return Err(format!("The short ebuild name '{}' is ambiguous.", package_name));
+        return Err(format!(
+            "The short ebuild name '{}' is ambiguous.",
+            package_name
+        ));
     }
 
     let category = category_list.pop()?.to_str().unwrap();
     Ok(Option(category))
 }
 
-fn get_ebuild_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, String> {
+fn get_ebuild_list(package_name_info: &PackageNameInfo) -> Result<Vec<&str>, String> {
     let cat = package_name_info.category.as_ref().copied().unwrap().0;
     let name = package_name_info.name.as_ref().copied().unwrap().0;
     let mut ver = "";
@@ -185,15 +199,15 @@ fn get_ebuild_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, Stri
     }
 
     package_name_info.version.as_ref().copied();
-// TODO: config
+    // TODO: config
     let path = Path::new(format!("/usr/portage/{}/{}", cat, name).as_str());
-// TODO: map() filter() dub
+    // TODO: map() filter() dub
     let mut ebuild_list = Vec::new();
     for entry in path.read_dir()? {
         let file = entry?;
         if file.path().is_file() {
             let file_name = file.file_name().to_str().unwrap();
-// TODO: config
+            // TODO: config
             if !file_name.contains(".ebuild") {
                 continue;
             }
@@ -206,7 +220,10 @@ fn get_ebuild_list(package_name_info: &PackageNameInfo)-> Result<Vec<&str>, Stri
     }
 
     if ebuild_list.len() = 0 {
-        return Err(format!("there are no ebuilds to satisfy '{}'.", package_name));
+        return Err(format!(
+            "there are no ebuilds to satisfy '{}'.",
+            package_name
+        ));
     }
 
     Ok(ebuild_list)
@@ -220,19 +237,20 @@ pub fn load_package_info(package_name: &str) -> Result<PackageInfo, String> {
     }
 
     let ebuild_list = get_ebuild_list(&package_name_info)?;
-    let mut package_info = PackageInfo{
+    let mut package_info = PackageInfo {
         name: package_name_info.name.unwrap().0,
         slot: package_name_info.slot.unwrap().0,
         subslot: None,
         installed_version: None,
         version_list: vec![],
         version_need_list: vec![],
-        use_need_list: vec![]
+        use_need_list: vec![],
     };
     for ebuild in ebuild_list {
-        let ebuild_info= load_ebuild(&ebuild.0)?;
-        let ebuild_name_info = parse_package_name(Path::new(&ebuild.0).file_stem().unwrap().to_str().unwrap())?;
-        let package_version = PackageVersion{
+        let ebuild_info = load_ebuild(&ebuild.0)?;
+        let ebuild_name_info =
+            parse_package_name(Path::new(&ebuild.0).file_stem().unwrap().to_str().unwrap())?;
+        let package_version = PackageVersion {
             version: ebuild_name_info.version.unwrap().0,
             version_type: VersionType::Stable,
             version_status: VersionStatus::Unchanged,
