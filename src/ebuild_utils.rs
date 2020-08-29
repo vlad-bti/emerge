@@ -130,23 +130,28 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
     })
 }
 
+fn get_package_name_re() -> String {
+    // TODO subslot
+    let _slot = r"([\w+][\w+.-]*)";
+    let _cat = r"[\w+][\w+.-]*";
+    let _pkg = r"[\w+][\w+-]*?";
+
+    let _v = r"(\d+)((\.\d+)*)([a-z]?)((_(pre|p|beta|alpha|rc)\d*)*)";
+    let _rev = r"\d+";
+    let _vr = format!("{}(-r({}))?", _v, _rev);
+
+    format!(
+        "^((?P<cat>{})/)?(?P<name>{})(-(?P<ver>{}))?(:(?P<slot>{}))?$",
+        _cat, _pkg, _vr, _slot
+    )
+}
+
 // TODO: https://gitweb.gentoo.org/proj/portage.git/tree/lib/_emerge/is_valid_package_atom.py?h=portage-2.3.103
 //      https://gitweb.gentoo.org/proj/portage.git/tree/lib/portage/dep/__init__.py?h=portage-2.3.103
 //      https://gitweb.gentoo.org/proj/portage.git/tree/lib/portage/versions.py?h=portage-2.3.103
 fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
     lazy_static! {
-        // TODO subslot
-        let _slot = r"([\w+][\w+.-]*)";
-        let _cat = r"[\w+][\w+.-]*";
-        let _pkg = r"[\w+][\w+-]*?";
-
-        let _v = r"(\d+)((\.\d+)*)([a-z]?)((_(pre|p|beta|alpha|rc)\d*)*)";
-        let _rev = r"\d+";
-        let _vr = format!("{}(-r({}))?", _v, _rev);
-
-        let _cp = format!("^((?P<cat>{})/)?(?P<name>{})(-(?P<ver>{}))?(:(?P<slot>{}))?$", _cat, _pkg, _vr, _slot);
-
-        static ref PACKAGE_NAME_RE: Regex = Regex::new(_cp).unwrap();
+        static ref PACKAGE_NAME_RE: Regex = Regex::new(get_package_name_re()).unwrap();
     }
     if !PACKAGE_NAME_RE.is_match(&package_name) {
         return Err(format!("'{}' is not a valid package atom.", package_name));
