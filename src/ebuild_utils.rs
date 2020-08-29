@@ -212,11 +212,11 @@ fn get_category(package_name: &str) -> Result<Option<&str>, String> {
 }
 
 fn get_ebuild_list<'a>(package_name_info: &PackageNameInfo) -> Result<Vec<&'a str>, String> {
-    let cat = package_name_info.category.as_ref().copied().unwrap().0;
-    let name = package_name_info.name.as_ref().copied().unwrap().0;
+    let cat = package_name_info.category.as_ref().copied().unwrap();
+    let name = package_name_info.name.as_ref().copied().unwrap();
     let mut ver = "";
     if package_name_info.version.is_some() {
-        ver = package_name_info.version.as_ref().copied().unwrap().0;
+        ver = package_name_info.version.as_ref().copied().unwrap();
     }
 
     package_name_info.version.as_ref().copied();
@@ -256,13 +256,13 @@ pub fn load_package_info(package_name: &str) -> Result<PackageInfo, String> {
     let mut package_name_info = parse_package_name(package_name)?;
     if package_name_info.category.is_none() {
         let name_copy = package_name_info.name.as_ref().copied();
-        package_name_info.category = get_category(name_copy.unwrap().0)?;
+        package_name_info.category = get_category(name_copy.unwrap())?;
     }
 
     let ebuild_list = get_ebuild_list(&package_name_info)?;
     let mut package_info = PackageInfo {
-        name: package_name_info.name.unwrap().0,
-        slot: package_name_info.slot.unwrap().0,
+        name: package_name_info.name.unwrap(),
+        slot: package_name_info.slot.unwrap(),
         subslot: None,
         installed_version: None,
         version_list: vec![],
@@ -270,11 +270,11 @@ pub fn load_package_info(package_name: &str) -> Result<PackageInfo, String> {
         use_need_list: vec![],
     };
     for ebuild in ebuild_list {
-        let ebuild_info = load_ebuild(&ebuild.0)?;
+        let ebuild_info = load_ebuild(&ebuild)?;
         let ebuild_name_info =
-            parse_package_name(Path::new(&ebuild.0).file_stem().unwrap().to_str().unwrap())?;
+            parse_package_name(Path::new(&ebuild).file_stem().unwrap().to_str().unwrap())?;
         let package_version = PackageVersion {
-            version: ebuild_name_info.version.unwrap().0,
+            version: ebuild_name_info.version.unwrap(),
             version_type: VersionType::Stable,
             version_status: VersionStatus::Unchanged,
             use_list: ebuild_info.ises,
