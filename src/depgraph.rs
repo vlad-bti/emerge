@@ -46,7 +46,9 @@ impl DepGraph for GraphData {
         let index_a = self.name_to_index.get(node_name_a).unwrap();
         let index_b = self.name_to_index.get(node_name_b).unwrap();
 
-        self.graph.add_edge(*index_a, *index_b, 1);
+        if !self.graph.contains_edge(*index_a, *index_b) {
+            self.graph.add_edge(*index_a, *index_b, 1);
+        }
         Ok(())
     }
 
