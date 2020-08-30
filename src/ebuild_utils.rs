@@ -91,12 +91,12 @@ fn load_ebuild(path: &str, ebuild_name: &str) -> Result<EbuildInfo, String> {
     lazy_static! {
         static ref EAPI_RE: Regex = Regex::new(r"EAPI=\x22*(?P<eapi>\d+)\x22*").unwrap();
         static ref SLOT_RE: Regex =
-            Regex::new(r"SLOT=\x22(?P<slot>[\.\w]+)(/(?P<subslot>[\.\w-]+)*)?\x22").unwrap();
+            Regex::new(r"SLOT=\x22(?P<slot>\w*?)(/(?P<subslot>\w*?)*)?\x22").unwrap();
         static ref KEYWORDS_RE: Regex =
-            Regex::new(r"(?m)KEYWORDS=\x22(?P<keywords>[\w\-\*~ ]+)\x22").unwrap();
+            Regex::new(r"(?m)KEYWORDS=\x22(?P<keywords>[\w\W]*?)\x22").unwrap();
         static ref DEPENDS_RE: Regex =
-            Regex::new(r"(?m)DEPEND=\x22(?P<depends>[\w\-<>=!\?\n\*\+/\(\):|\[\] ]+)\x22").unwrap();
-        static ref IUSE_RE: Regex = Regex::new(r"(?m)IUSE=\x22(?P<iuse>[\w\-\+ ]+)\x22").unwrap();
+            Regex::new(r"(?m)\nDEPEND=\x22(?P<depends>[\w\W]*?)\x22").unwrap();
+        static ref IUSE_RE: Regex = Regex::new(r"(?m)IUSE=\x22(?P<iuse>[\w\W]*?)\x22").unwrap();
     }
 
     let result = fs::read_to_string(Path::new(&path).join(&ebuild_name));
@@ -260,9 +260,9 @@ fn get_ebuild_list(package_name_info: &PackageNameInfo) -> Result<Vec<String>, S
             if !file_name.contains(".ebuild") {
                 continue;
             }
-            if package_name_info.version.is_some() && !file_name.contains(ver.as_str()) {
-                continue;
-            }
+            //if package_name_info.version.is_some() && !file_name.contains(ver.as_str()) {
+            //    continue;
+            //}
 
             ebuild_list.push(file_name);
         }
