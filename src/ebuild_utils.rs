@@ -181,7 +181,10 @@ fn parse_package_name(package_name: &str) -> Result<PackageNameInfo, String> {
     Ok(PackageNameInfo {
         category: cap.name("cat").map(|cat| cat.as_str().into()),
         name: cap.name("name").map(|name| name.as_str().into()),
-        slot: cap.name("slot").map(|slot| slot.as_str().into()),
+        slot: Some(
+            cap.name("slot")
+                .map_or_else(|| String::from("0"), |slot| slot.as_str().into()),
+        ),
         version: cap.name("ver").map(|ver| ver.as_str().into()),
     })
 }

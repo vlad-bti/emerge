@@ -18,7 +18,7 @@ pub fn init_dep_graph() -> GraphData {
 
 pub trait DepGraph {
     fn add_node(&mut self, node_name: &str) -> Result<i32, String>;
-    fn add_edge(&mut self, node_name_a: &str, node_name_b: &str) -> Result<i8, String>;
+    fn add_edge(&mut self, node_name_a: &str, node_name_b: &str) -> Result<Option<i8>, String>;
     fn is_cyclic_directed(&self) -> bool;
     fn toposort(&self) -> Vec<String>;
 }
@@ -35,7 +35,7 @@ impl DepGraph for GraphData {
         Ok(self.graph.add_node(count))
     }
 
-    fn add_edge(&mut self, node_name_a: &str, node_name_b: &str) -> Result<i8, String> {
+    fn add_edge(&mut self, node_name_a: &str, node_name_b: &str) -> Result<Option<i8>, String> {
         if !self.name_to_index.contains_key(node_name_a) {
             return Err(format!("'{}' node don't exists", node_name_a));
         }
@@ -46,7 +46,7 @@ impl DepGraph for GraphData {
         let index_a = self.name_to_index.get(node_name_a).unwrap();
         let index_b = self.name_to_index.get(node_name_b).unwrap();
 
-        Ok(self.graph.add_edge(*index_a, *index_b, 1).unwrap())
+        Ok(self.graph.add_edge(*index_a, *index_b, 1))
     }
 
     fn is_cyclic_directed(&self) -> bool {
