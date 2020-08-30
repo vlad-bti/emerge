@@ -87,7 +87,7 @@ fn parse_depends(depends: &str) -> Vec<String> {
 }
 
 // TODO: https://devmanual.gentoo.org/ebuild-writing/index.html
-fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
+fn load_ebuild(path: &str, ebuild_name: &str) -> Result<EbuildInfo, String> {
     lazy_static! {
         static ref EAPI_RE: Regex = Regex::new(r"EAPI=\x22*(?P<eapi>\d+)\x22*").unwrap();
         static ref SLOT_RE: Regex =
@@ -96,12 +96,12 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
             Regex::new(r"(?m)KEYWORDS=\x22(?P<keywords>[\w\-\*~ ]+)\x22").unwrap();
         static ref DEPENDS_RE: Regex =
             Regex::new(r"(?m)DEPEND=\x22(?P<depends>[\w\-<>=!\?\n\*\+/\(\):|\[\] ]+)\x22").unwrap();
-        static ref IUSE_RE: Regex = Regex::new(r"(?m)IUSE=\x22(?P<iuse>[\w\-\+)\x22").unwrap();
+        static ref IUSE_RE: Regex = Regex::new(r"(?m)IUSE=\x22(?P<iuse>[\w\-\+ ]+)\x22").unwrap();
     }
 
-    let result = fs::read_to_string(&ebuild_name);
+    let result = fs::read_to_string(Path::new(&path).join(&ebuild_name));
     if let Err(e) = result {
-        return Err(e.to_string());
+        return Err(format!("'{}' - {}", ebuild_name, e.to_string()));
     }
 
     let content = result.unwrap();
@@ -116,37 +116,50 @@ fn load_ebuild(ebuild_name: &str) -> Result<EbuildInfo, String> {
         return Err(format!("EAPI must be defined. '{}'", ebuild_name));
     }
 
-    let slot_cap = SLOT_RE.captures(&content).unwrap();
-    let keywords_cap = KEYWORDS_RE.captures(&content).unwrap();
-    let depends_cap = DEPENDS_RE.captures(&content).unwrap();
-    let iuse_cap = IUSE_RE.captures(&content).unwrap();
+    let mut ebuild_info = EbuildInfo {
+        slot: Some("0".into()),
+        subslot: None,
+        keywords: vec![],
+        depends: vec![],
+        ises: vec![],
+    };
 
-    Ok(EbuildInfo {
-        slot: slot_cap.name("slot").map(|slot| slot.as_str().into()),
-        subslot: slot_cap
-            .name("subslot")
-            .map(|subslot| subslot.as_str().into()),
-        keywords: keywords_cap
+    let slot_cap = SLOT_RE.captures(&content);
+    let keywords_cap = KEYWORDS_RE.captures(&content);
+    let depends_cap = DEPENDS_RE.captures(&content);
+    let iuse_cap = IUSE_RE.captures(&content);
+
+    if let Some(cap) = slot_cap {
+        ebuild_info.slot = cap.name("slot").map(|slot| slot.as_str().into());
+        ebuild_info.subslot = cap.name("subslot").map(|subslot| subslot.as_str().into());
+    }
+
+    if let Some(cap) = keywords_cap {
+        ebuild_info.keywords = cap
             .name("keywords")
             .map(|keywords| keywords.as_str())
             .unwrap()
             .split_ascii_whitespace()
             .map(|keywords| keywords.into())
-            .collect(),
-        depends: parse_depends(
-            depends_cap
-                .name("depends")
-                .map(|depends| depends.as_str())
-                .unwrap(),
-        ),
-        ises: iuse_cap
+            .collect();
+    }
+
+    if let Some(cap) = depends_cap {
+        ebuild_info.depends =
+            parse_depends(cap.name("depends").map(|depends| depends.as_str()).unwrap());
+    }
+
+    if let Some(cap) = iuse_cap {
+        ebuild_info.ises = cap
             .name("iuse")
             .map(|iuse| iuse.as_str())
             .unwrap()
             .split_ascii_whitespace()
             .map(|iuse| iuse.into())
-            .collect(),
-    })
+            .collect();
+    }
+
+    Ok(ebuild_info)
 }
 
 fn get_package_name_re() -> String {
@@ -279,8 +292,14 @@ pub fn load_package_info(package_name: &str) -> Result<PackageInfo, String> {
         version_need_list: vec![],
         use_need_list: vec![],
     };
+
+    let cat = package_name_info.category.clone().unwrap();
+    let name = package_name_info.name.clone().unwrap();
+
+    // TODO: config
+    let path = format!("/usr/portage/{}/{}", cat, name);
     for ebuild in ebuild_list {
-        let ebuild_info = load_ebuild(&ebuild)?;
+        let ebuild_info = load_ebuild(&path, &ebuild)?;
         let ebuild_name_info = parse_package_name(
             Path::new(ebuild.as_str())
                 .file_stem()
