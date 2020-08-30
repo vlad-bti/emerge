@@ -5,8 +5,9 @@ use std::result::Result;
 
 use logos::Logos;
 
-use crate::data::PackageNameInfo;
-use crate::data::{EbuildInfo, PackageInfo, PackageVersion, VersionStatus, VersionType};
+use crate::data::{
+    EbuildInfo, PackageInfo, PackageNameInfo, PackageVersion, VersionStatus, VersionType,
+};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {

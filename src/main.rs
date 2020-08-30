@@ -25,9 +25,9 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<GraphData, String> {
     graph.add_node(node_name_s)?;
     graph.add_node(node_name_t)?;
 
-    for package_name in package_name_list {
-        graph.add_node(&package_name);
-        graph.add_edge(&package_name, node_name_t);
+    for package_name in &package_name_list {
+        graph.add_node(package_name)?;
+        graph.add_edge(package_name, node_name_t)?;
     }
 
     while !package_name_list.is_empty() {
@@ -37,12 +37,12 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<GraphData, String> {
 
         let package_version = package_info.version_list.first().unwrap();
         if package_version.depends_list.is_empty() {
-            graph.add_edge(node_name_s, &package_name);
+            graph.add_edge(node_name_s, &package_name)?;
         }
 
         for depend_name in package_version.depends_list.iter() {
-            graph.add_node(depend_name);
-            graph.add_edge(depend_name, &package_name);
+            graph.add_node(depend_name)?;
+            graph.add_edge(depend_name, &package_name)?;
             package_name_list.push(depend_name.into());
         }
         /*
