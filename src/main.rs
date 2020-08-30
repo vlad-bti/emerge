@@ -40,7 +40,7 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<GraphData, String> {
             graph.add_edge(node_name_s, &package_name)?;
         }
 
-        for depend_name in package_version.depends_list.iter() {
+        for depend_name in &package_version.depends_list {
             graph.add_node(depend_name)?;
             graph.add_edge(depend_name, &package_name)?;
             package_name_list.push(depend_name.into());
