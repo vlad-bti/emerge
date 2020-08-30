@@ -17,34 +17,34 @@ pub fn init_dep_graph() -> GraphData {
 }
 
 pub trait DepGraph {
-    fn add_node(&mut self, node_name: String) -> Result<i32, String>;
-    fn add_edge(&mut self, node_name_a: String, node_name_b: String) -> Result<i8, String>;
+    fn add_node(&mut self, node_name: &str) -> Result<i32, String>;
+    fn add_edge(&mut self, node_name_a: &str, node_name_b: &str) -> Result<i8, String>;
     fn is_cyclic_directed(&self) -> bool;
     fn toposort(&self) -> Vec<String>;
 }
 
 impl DepGraph for GraphData {
-    fn add_node(&mut self, node_name: String) -> Result<i32, String> {
+    fn add_node(&mut self, node_name: &str) -> Result<i32, String> {
         let count = self.graph.node_count() as i32;
-        if self.name_to_index.contains_key(&node_name) {
+        if self.name_to_index.contains_key(node_name) {
             return Err(format!("'{}' node exists", node_name));
         }
-        self.name_to_index.insert(node_name.clone(), count);
-        self.index_to_name.insert(count, node_name);
+        self.name_to_index.insert(node_name.into(), count);
+        self.index_to_name.insert(count, node_name.into());
 
         Ok(self.graph.add_node(count))
     }
 
-    fn add_edge(&mut self, node_name_a: String, node_name_b: String) -> Result<i8, String> {
-        if !self.name_to_index.contains_key(&node_name_a) {
+    fn add_edge(&mut self, node_name_a: &str, node_name_b: &str) -> Result<i8, String> {
+        if !self.name_to_index.contains_key(node_name_a) {
             return Err(format!("'{}' node don't exists", node_name_a));
         }
-        if !self.name_to_index.contains_key(&node_name_b) {
+        if !self.name_to_index.contains_key(node_name_b) {
             return Err(format!("'{}' node don't exists", node_name_b));
         }
 
-        let index_a = self.name_to_index.get(&node_name_a).unwrap();
-        let index_b = self.name_to_index.get(&node_name_b).unwrap();
+        let index_a = self.name_to_index.get(node_name_a).unwrap();
+        let index_b = self.name_to_index.get(node_name_b).unwrap();
 
         Ok(self.graph.add_edge(*index_a, *index_b, 1).unwrap())
     }
