@@ -57,7 +57,7 @@ impl DepGraph for GraphData {
         if !self.name_to_index.contains_key(node_name) {
             return Err(format!("'{}' node don't exists", node_name));
         }
-        let index = self.name_to_index.get(node_name_a).unwrap();
+        let index = self.name_to_index.get(node_name).unwrap();
         let neighbors = self.graph.neighbors_directed(*index, Direction::Outgoing);
         Ok(neighbors.count() > 0)
     }

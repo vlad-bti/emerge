@@ -16,7 +16,7 @@ fn help() {
     );
 }
 
-fn build_dag(mut package_name_list: Vec<String>) -> Result<GraphData, String> {
+fn build_dag(org_package_name_list: Vec<String>) -> Result<GraphData, String> {
     let mut graph = init_dep_graph();
 
     let node_name_s = "s";
@@ -25,14 +25,14 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<GraphData, String> {
     graph.add_node(node_name_s)?;
     graph.add_node(node_name_t)?;
 
-    for package_name in &package_name_list {
+    let mut package_name_list = Vec::new();
+    for package_name in &org_package_name_list {
         graph.add_node(package_name)?;
-        graph.add_edge(package_name, node_name_t)?;
+        package_name_list.push(String::from(package_name));
     }
 
     while !package_name_list.is_empty() {
         let package_name = package_name_list.pop().unwrap();
-
         let package_info = ebuild_utils::load_package_info(&package_name)?;
 
         let package_version = package_info.version_list.first().unwrap();
@@ -53,6 +53,12 @@ fn build_dag(mut package_name_list: Vec<String>) -> Result<GraphData, String> {
                     package_info_list.push(package_info);
                 }
         */
+    }
+
+    for package_name in org_package_name_list {
+        if !graph.is_outgoing_neighbors_exists(&package_name)? {
+            graph.add_edge(&package_name, node_name_t)?;
+        }
     }
 
     if graph.is_cyclic_directed() {
