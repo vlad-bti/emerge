@@ -1,15 +1,20 @@
+#![allow(dead_code)]
+
+#[derive(Debug)]
 pub enum VersionType {
     Stable,
     Unstable,
     Masked,
 }
 
+#[derive(Debug)]
 pub enum VersionStatus {
     Unchanged,
     MaskedByUser,
     UnmaskedByUser,
 }
 
+#[derive(Debug)]
 pub struct PackageVersion {
     pub version: String,
     pub version_type: VersionType,
@@ -19,6 +24,7 @@ pub struct PackageVersion {
     pub depends_list: Vec<String>,
 }
 
+#[derive(Debug)]
 pub struct PackageInfo {
     pub name: String,
     pub slot: String,
@@ -29,6 +35,7 @@ pub struct PackageInfo {
     pub use_need_list: Vec<String>,
 }
 
+#[derive(Debug)]
 pub struct PackageNameInfo {
     pub category: Option<String>,
     pub name: Option<String>,
@@ -36,6 +43,7 @@ pub struct PackageNameInfo {
     pub version: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct EbuildInfo {
     pub slot: Option<String>,
     pub subslot: Option<String>,
@@ -44,11 +52,13 @@ pub struct EbuildInfo {
     pub ises: Vec<String>,
 }
 
+#[derive(Debug)]
 pub enum Brackets {
     Open,
     Close,
 }
 
+#[derive(Debug)]
 pub enum Conditional {
     WeakBlocker,
     StrongBlocker,
