@@ -6,7 +6,7 @@ mod data;
 mod depgraph;
 mod ebuild_utils;
 
-use crate::depgraph::{init_dep_graph, DepGraph, GraphData};
+use crate::depgraph::{DepGraph, GraphData};
 use std::env;
 
 fn help() {
@@ -17,7 +17,7 @@ fn help() {
 }
 
 fn build_dag(org_package_name_list: Vec<String>) -> Result<GraphData, String> {
-    let mut graph = init_dep_graph();
+    let mut graph = GraphData::new();
 
     let node_name_s = "s";
     let node_name_t = "t";

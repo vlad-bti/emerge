@@ -8,11 +8,13 @@ pub struct GraphData {
     pub name_to_index: HashMap<String, i32>,
 }
 
-pub fn init_dep_graph() -> GraphData {
-    GraphData {
-        graph: Default::default(),
-        index_to_name: Default::default(),
-        name_to_index: Default::default(),
+impl GraphData {
+    pub fn new() -> GraphData {
+        GraphData {
+            graph: Default::default(),
+            index_to_name: Default::default(),
+            name_to_index: Default::default(),
+        }
     }
 }
 
