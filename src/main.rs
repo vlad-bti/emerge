@@ -33,6 +33,7 @@ fn build_dag(org_package_name_list: Vec<String>) -> Result<GraphData, String> {
 
     while !package_name_list.is_empty() {
         let package_name = package_name_list.pop().unwrap();
+        println!("{:?}", package_name);
         let package_info = ebuild_utils::load_package_info(&package_name)?;
 
         let package_version = package_info.version_list.first().unwrap();
@@ -74,6 +75,7 @@ fn print_dag(graph: GraphData) {
 }
 
 fn main() {
+    // TODO: https://docs.rs/structopt/0.3.17/structopt/
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
