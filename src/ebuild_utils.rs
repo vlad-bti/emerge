@@ -1,9 +1,8 @@
-use regex::Regex;
-use std::fs;
-use std::path::Path;
-use std::result::Result;
+use std::{fs, path::Path, result::Result};
 
+use lazy_static::lazy_static;
 use logos::Logos;
+use regex::Regex;
 
 use crate::data::{
     EbuildInfo, PackageInfo, PackageNameInfo, PackageVersion, VersionStatus, VersionType,
@@ -238,7 +237,7 @@ fn get_category(package_name: &str) -> Result<Option<String>, String> {
 fn get_ebuild_list(package_name_info: &PackageNameInfo) -> Result<Vec<String>, String> {
     let cat = package_name_info.category.clone().unwrap();
     let name = package_name_info.name.clone().unwrap();
-    let mut ver = String::from("");
+    let mut ver = String::new();
     if package_name_info.version.is_some() {
         ver = package_name_info.version.clone().unwrap();
     }

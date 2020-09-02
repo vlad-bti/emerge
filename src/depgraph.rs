@@ -1,6 +1,10 @@
-use petgraph::prelude::*;
 use std::collections::HashMap;
 
+use petgraph::prelude::*;
+
+use crate::ebuild_utils;
+
+#[derive(Default)]
 pub struct GraphData {
     // TODO: Graph
     pub graph: DiGraphMap<i32, i8>,
@@ -9,12 +13,65 @@ pub struct GraphData {
 }
 
 impl GraphData {
-    pub fn new() -> GraphData {
-        GraphData {
-            graph: Default::default(),
-            index_to_name: Default::default(),
-            name_to_index: Default::default(),
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn build_dag_from(org_package_name_list: &[String]) -> Result<GraphData, String> {
+        let mut graph = Self::new();
+
+        const NODE_NAME_S: &str = "s";
+        const NODE_NAME_T: &str = "t";
+
+        graph.add_node(NODE_NAME_S)?;
+        graph.add_node(NODE_NAME_T)?;
+
+        let mut package_name_list = Vec::new();
+        for package_name in org_package_name_list {
+            graph.add_node(package_name)?;
+            package_name_list.push(String::from(package_name));
         }
+
+        while !package_name_list.is_empty() {
+            let package_name = package_name_list.pop().unwrap();
+            let package_info = ebuild_utils::load_package_info(&package_name)?;
+
+            let package_version = package_info.version_list.first().unwrap();
+            if package_version.depends_list.is_empty() {
+                graph.add_edge(NODE_NAME_S, &package_name)?;
+            }
+
+            for depend_name in &package_version.depends_list {
+                graph.add_node(depend_name)?;
+                graph.add_edge(depend_name, &package_name)?;
+                package_name_list.push(depend_name.into());
+            }
+            /*
+                    if package_info_list.contains(&package_name) {
+                        package_info_list.check_restrictions(&package_info)?;
+                        package_info_list.merge_restrictions(&package_info);
+                    } else {
+                        package_info_list.push(package_info);
+                    }
+            */
+        }
+
+        for package_name in org_package_name_list {
+            if !graph.is_outgoing_neighbors_exists(&package_name)? {
+                graph.add_edge(&package_name, NODE_NAME_T)?;
+            }
+        }
+
+        if graph.is_cyclic_directed() {
+            return Err(String::from("directed graph contains a cycle"));
+        }
+
+        Ok(graph)
+    }
+
+    pub fn print_dag(&self) {
+        let order = self.toposort();
+        println!("{:?}", order);
     }
 }
 
@@ -71,9 +128,11 @@ impl DepGraph for GraphData {
     fn toposort(&self) -> Vec<String> {
         let order = petgraph::algo::toposort(&self.graph, None).unwrap();
         let mut result = vec![];
+
         for index in order {
             result.push(self.index_to_name.get(&index).unwrap().clone());
         }
+
         result
     }
 }
